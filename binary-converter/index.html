@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>binary converter</title>
+<style>
+        
+    /* https://www.w3schools.com/howto/howto_css_switch.asp */
+    /* The switch - the box around the slider */
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 36px;
+        height: 60px;
+        margin: 12px;
+        border: 3px solid #000000;
+        border-radius: 20px;
+    }
+    
+    /* Hide default HTML checkbox */
+    .switch input {display:none;}
+    
+    /* The slider */
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        -webkit-transition: .4s;
+        transition: .4s;
+    }
+    
+    .slider:before {
+        content: "0";
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        -webkit-transition: .4s;
+        transition: .4s;
+    }
+    
+    input:checked + .slider {
+        background-color: #FFC896;
+    }
+    
+    input:focus + .slider {
+        box-shadow: 0 0 1px #2196F3;
+    }
+    
+    input:checked + .slider:before {
+        -webkit-transform: translateY(-26px);
+        -ms-transform: translateY(-26px);
+        transform: translateY(-26px);
+    }
+    
+    /* Rounded sliders */
+    .slider.round {
+        border-radius: 34px;
+    }
+    
+    .slider.round:before {
+        border-radius: 50%;
+    }
+
+    div.relative {
+        position: relative;
+        padding: 25px;
+        left: 30px;
+        width: 560px;
+        border: 3px solid #73AD21;
+    }
+
+    .box-bg {
+        position: absolute;
+        top: 280px;
+        right: 20;
+        width: 550px;
+        height: 120px;
+        border: 1px solid #000000;
+        background-image: url("wood.jpg");
+    }
+
+    /* header line */
+    .header {
+        font-style: normal;
+        font-size: 1.5em;
+        font-family: "Times New Roman", Times, serif;
+    }
+    .output {
+        font-family: "Courier New", Monospace;
+        font-size: 1.2em;
+    }
+
+
+</style>
+
+</head>
+<body onload="uncheckAll()">
+<script>
+    // keys match checkbox IDs
+    var switchState = {
+        che1: false,
+        che2: false,
+        che3: false,
+        che4: false,
+        che5: false,
+        che6: false,
+        che7: false,
+        che8: false,
+    }
+
+    function showBits(switchID) {
+        checkSwitch(switchID);
+        showNixieTubes();
+        var binaryStr = bitsToStr();
+        showDecimal(binaryStr);
+        showHex(binaryStr);
+        
+    }
+    // turn true, false into '01'
+    // switches are read left to right
+    // not using a foreach, just in case javascript returns the keys
+    // in a random order
+    function bitsToStr() {
+        //
+        var bits = '';
+        switchState["che1"] ? bits = bits + '1' : bits = bits + '0' ;
+        switchState["che2"] ? bits = bits + '1' : bits = bits + '0' ;
+        switchState["che3"] ? bits = bits + '1' : bits = bits + '0' ;
+        switchState["che4"] ? bits = bits + '1' : bits = bits + '0' ;
+        switchState["che5"] ? bits = bits + '1' : bits = bits + '0' ;
+        switchState["che6"] ? bits = bits + '1' : bits = bits + '0' ;
+        switchState["che7"] ? bits = bits + '1' : bits = bits + '0' ;
+        switchState["che8"] ? bits = bits + '1' : bits = bits + '0' ;
+        return bits;
+    }
+
+    function showDecimal(binaryStr) {
+        base10 = parseInt(binaryStr, 2);
+        document.getElementById("decimal").innerHTML = base10;
+    }
+
+    function showHex(binaryStr) {
+        base10 = parseInt(binaryStr, 2);
+        base8 = base10.toString(16);
+        // from decimal 10 to hex A to 00A to 0A
+        var twoChars = ('00'+base8).substring(base8.length);
+        document.getElementById("hex").innerHTML = "0x" + twoChars.toUpperCase();
+    }
+
+    function checkSwitch(switchID) {
+        var checkBox = document.getElementById(switchID);
+        if (checkBox.checked){
+            switchState[switchID] = true;
+        } else {
+            switchState[switchID] = false;
+        }
+    }
+
+    function showNixieTubes() {
+        Object.keys(switchState)
+        .forEach(
+             prop => {
+                if (switchState[prop]) {
+                    document.getElementById(prop + "Nix").src = "nixie-tube-1.png";
+                }
+                else {
+                    document.getElementById(prop + "Nix").src = "nixie-tube-0.png";
+                }
+             }
+        );
+    }
+
+    function uncheckAll(){
+        var w = document.getElementsByTagName('input');
+        for(var i = 0; i < w.length; i++){
+            if(w[i].type=='checkbox'){
+                w[i].checked = false;
+            }
+        }
+    }
+</script>
+
+<!-- HTML -->
+
+<div class="relative">
+
+<p class="header" >binary converter &nbsp;&nbsp;
+hexadecimal: <span class="output" id="hex">0x00</span> &nbsp;&nbsp;
+    decimal: <span class="output" id="decimal">0</span>
+</p>
+    <!-- numbers -->
+     <img id="che1Nix" src='nixie-tube-0.png'
+    ><img id="che2Nix" src='nixie-tube-0.png'
+    ><img id="che3Nix" src='nixie-tube-0.png'
+    ><img id="che4Nix" src='nixie-tube-0.png'
+    ><img id="che5Nix" src='nixie-tube-0.png'
+    ><img id="che6Nix" src='nixie-tube-0.png'
+    ><img id="che7Nix" src='nixie-tube-0.png'
+    ><img id="che8Nix" src='nixie-tube-0.png'>
+        
+    <div class="box-bg" >
+    </div>
+    <!-- switches -->
+    <label class="switch">
+        <input id="che1"  type="checkbox" onclick="showBits('che1')" unchecked>
+        <span class="slider round"></span>
+    </label>
+    <label class="switch">
+        <input id="che2"  type="checkbox" onclick="showBits('che2')" unchecked>
+        <span class="slider round"></span>
+    </label>
+    <label class="switch">
+        <input id="che3"  type="checkbox" onclick="showBits('che3')" unchecked>
+        <span class="slider round"></span>
+    </label>
+    <label class="switch">
+        <input id="che4"  type="checkbox" onclick="showBits('che4')" unchecked>
+        <span class="slider round"></span>
+    </label>
+    <label class="switch">
+        <input id="che5"  type="checkbox" onclick="showBits('che5')" unchecked>
+        <span class="slider round"></span>
+    </label>
+    <label class="switch">
+        <input id="che6"  type="checkbox" onclick="showBits('che6')" unchecked>
+        <span class="slider round"></span>
+    </label>
+    <label class="switch">
+        <input id="che7"  type="checkbox" onclick="showBits('che7')" unchecked>
+        <span class="slider round"></span>
+    </label>
+    <label class="switch">
+        <input id="che8"  type="checkbox" onclick="showBits('che8')" unchecked>
+            <span class="slider round"></span>
+    </label>
+</div>
+<p>
+Click the switches. Up is on, down is off.
+</p>
+<p>
+The eight bits are translated to
+<a href="https://en.wikipedia.org/wiki/Hexadecimal">hexadecimal</a>
+and
+<a href="https://en.wikipedia.org/wiki/Decimal">decimal</a>.
+The prefix "0x" in front of the hexadecimal helps programmers.
+They need to see the difference between '11' in hexadecimal and '11' in decimal.
+They aren't the same. '11' in hexadecimal translates to '17' in decimal.
+See for yourself by setting the switches to '00010001'.
+</p>
+<p>
+These switches are an
+<a href="https://en.wikipedia.org/wiki/Input_device">input device</a>
+for entering a
+<a href="https://en.wikipedia.org/wiki/Decimal">byte</a>.
+The <a href="https://en.wikipedia.org/wiki/Nixie_tube">Nixie tubes</a>
+are an 
+<a href="https://en.wikipedia.org/wiki/Output_device">output device</a> for displaying the byte.
+</p>
+</body>
+</html>
