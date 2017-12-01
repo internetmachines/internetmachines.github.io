@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>logic gate relay</title>
+    <style>
+    	* { padding: 0; margin: 0; }
+    	canvas { background: #eee; display: block; margin: 0 auto; }
+    </style>
+</head>
+<body>
+
+<canvas id="myCanvas" width="680" height="500"></canvas>
+<p>Click the switch. </p>
+<p>This is a NOT gate. It inverts the input. If the left is on, the right is off.</p>
+<p>The mechanical gate at the top uses lightbulbs to show which side is on.
+The switch turns on the
+<a href="https://en.wikipedia.org/wiki/Relay">relay</a>
+ in the middle, which contains an
+<a href="https://en.wikibooks.org/wiki/Wikijunior:Big_Book_of_Fun_Science_Experiments/How_to_Make_an_Electromagnet">electromagnet</a>.
+This breaks the circuit on the right. Some of the first computers used relays like this.
+</p>
+<p>The logic gate in the middle is a diagram. It hides the details of how the NOT gate is built. </p>
+<p>The
+<a href="https://en.wikipedia.org/wiki/Boolean_algebra">boolean algebra</a> at the bottom shows a formula.</p>
+
+<script>
+	// canvas
+    var canvas = document.getElementById("myCanvas");
+    var ctx = canvas.getContext("2d");
+  
+//
+    var x = 10;
+    var y = 30;
+    // true - high voltage, false - low voltage
+    var xIn = false;
+
+// circuit 1
+    var circuitOneOn = false;
+    var offColor = '#000000';
+    var onColor = '#FFC896';
+    var circuitOneColor = offColor;
+    
+// switch
+    var switchX = x + 30;
+    var switchY = y + 80;
+    var switchWidth = 110;
+    var switchHeight = 55; // does not include the button on top or pins below
+
+    thickLineWidth = switchWidth / 30;
+    thinLineWidth = switchWidth / 60;
+
+// switch components - box, pings, wiper, handle
+    var switchColor = offColor;
+    var switchOn = false;
+    //
+    var boxGap = switchWidth / 50; // gap between box lines
+    //
+    var dipPinWidth = switchWidth * 0.8;
+    var dipPinHeight = switchHeight / 2;
+    var dipPinX = switchX + (switchWidth / 9);
+    var dipPinY = switchY + (switchHeight * 0.79)
+    //
+    var origSwitchWipeAngle = 255; // degrees from horiz, anticlockwise
+    var switchWipeAngle = origSwitchWipeAngle; // this will change
+    //
+    var handleColor  = offColor;
+    var handleBuffer = switchWidth / 12;
+    var handleX      = switchX + handleBuffer;
+    var handleY      = switchY - (switchHeight / 3.6);
+    var handleWidth  = switchWidth / 1.8;
+    var handleHeight = switchHeight / 1.125;
+
+// wire for circuit 1
+    var wireOneX = dipPinX;
+    var wireOneY = dipPinY + dipPinHeight;
+    var wireHeight = 30;
+
+    
+// battery for circuit 1
+    var battWidth = switchWidth / 2;
+    var battHeight = switchHeight / 2.2;
+    var battOneX = wireOneX + switchWidth;
+    var battOneY = wireOneY + wireHeight - (battHeight / 2);
+
+// lightbulb for circuit 1
+    var bulbWidth = 60;
+    var bulbHeight = bulbWidth * 1.5; // blatant guess
+    var bulbOneOn = false;
+    var bulbOneX = battOneX + bulbWidth;
+    var bulbOneY = wireOneY + wireHeight - bulbHeight;
+
+// relay
+    var relayX = bulbOneX + bulbWidth + 15;
+    var relayY = y;
+    var relayWidth = 130;
+    var relayHeight = 140; // does not include the button on top or pins below
+    var relayPinSpacing = 20;
+    var rightRelayWipeAngle = 208; // degrees from vert, clockwise
+    var leftRelayWipeAngle = 180; // degrees from horiz, clockwise
+    var relayWipeAngle = rightRelayWipeAngle; // this will change
+
+// circuit 2
+var circuitTwoOn = true;
+var circuitTwoColor = onColor;
+
+// wire for circuit 2
+    var wireTwoX = relayX + (relayPinSpacing * 3);
+    var wireTwoY = wireOneY;
+
+// battery for circuit 2
+    var battTwoX = wireTwoX + switchWidth;
+    var battTwoY = battOneY;
+
+// lightbulb for circuit 2
+    var bulbTwoOn = true;
+    var bulbTwoX = battTwoX + bulbWidth;
+    var bulbTwoY = wireTwoY + wireHeight - bulbHeight;
+
+// logic gate
+    var ansiX = 190;
+    var ansiY = 280;
+
+// boolean algebra
+    var boolX = ansiX + 25;
+    var boolY = ansiY  + 120;
+
+
+
+
+// events
+    // Move handle if mouse clicks on it.
+    canvas.addEventListener("click", toggleHandle, false);
+    // Highlight handle if the mouse hovers over it.
+    canvas.addEventListener('mousemove', colorHandle, false);
+    //
+    setInterval(draw, 10);
+
+
+// functions
+
+    function draw() {
+        
+        // draw
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (circuitOneOn) {
+            circuitOneColor = onColor;
+        } else {
+            circuitOneColor = offColor;
+        }
+        if (circuitTwoOn) {
+            circuitTwoColor = onColor;
+        } else {
+            circuitTwoColor = offColor;
+        }
+        drawCircuitOneWire (wireOneX, wireOneY);
+        drawSwitch (ctx, switchX, switchY, switchWidth, switchHeight);
+        drawBulb (bulbOneX, bulbOneY, bulbWidth, circuitOneOn);
+        drawBattery (battOneX, battOneY, battWidth, battHeight);
+        relayWiperMove();
+        drawRelay (relayX, relayY, relayWidth, relayHeight);
+        drawCircuitTwoWire (wireTwoX, wireTwoY);
+        drawBattery (battTwoX, battTwoY, battWidth, battHeight);
+        drawBulb (bulbTwoX, bulbTwoY, bulbWidth, circuitTwoOn);
+        
+        drawNotGate(ansiX, ansiY, circuitOneOn);
+        
+        labelNotGate(boolX, boolY, circuitOneOn);
+        
+    }
+
+// boolean row
+
+function labelNotGate(origX, origY, xIn) {
+    ctx.fillStyle = '#000000';
+    ctx.font = "italic 24pt serif";
+    
+    // x
+    var x = origX;
+    var y = origY;
+    var bit = '';
+    if (xIn) {
+        bit = '1';
+    } else {
+        bit = '0';
+    }
+    ctx.fillText("x = " + bit, x, y);
+    
+    // not x
+    var x = origX + 170;
+    var y = origY;
+    var h = '00ac'; // not sign
+    var notSign = String.fromCharCode(parseInt(h, 16));
+    if (xIn) {
+        bit = '0';
+    } else {
+        bit = '1';
+    }    ctx.fillText(notSign + "x = " + bit, x, y);
+}
+
+
+// logic gate row
+
+function drawNotGate(origX, origY, xIn) {
+    var lineWidth = 100;
+    // triangle
+    var x = origX + lineWidth;
+    var y = origY;
+    var triangleWidth = 60;
+    var triangleHeight = 60;
+    ctx.beginPath();
+    ctx.strokeStyle = offColor;
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 3;
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + triangleWidth, y + (triangleHeight / 2));
+    ctx.lineTo(x, y + triangleHeight);
+    ctx.lineTo(x, y);
+    ctx.closePath();
+    ctx.stroke();
+    
+    // circle
+    var radius = 5;
+    x += triangleWidth + radius;
+    y += (triangleHeight / 2);
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, 2*Math.PI);
+    ctx.closePath();
+    ctx.stroke();
+    
+    // connector in
+    x = origX;
+    y = origY + (triangleHeight / 2);
+    ctx.beginPath();
+    var color;
+    if (xIn) {
+        color = onColor;
+    } else {
+        color = offColor;
+    }
+    ctx.strokeStyle = color;
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 3;
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + lineWidth, y);
+    ctx.closePath();
+    ctx.stroke();
+    
+    // connector out
+    x += lineWidth +  triangleWidth + (radius * 2);
+    ctx.beginPath();
+    if (xIn) {
+        color = offColor;
+    } else {
+        color = onColor;
+    }
+    ctx.strokeStyle = color;
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 3;
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + lineWidth, y);
+    ctx.closePath();
+    ctx.stroke();
+}
+
+// switch functions
+
+    function drawSwitch (ctx, x, y, width, height) {
+        ctx.fillStyle = switchColor;
+        ctx.strokeStyle = switchColor;
+        ctx.lineCap = 'butt';
+        box(ctx, x, y, width, height);
+        handleGuide (x, y, width);
+        dipPins (ctx, dipPinX, dipPinY, dipPinWidth, dipPinHeight);
+        switchWiper(ctx, dipPinX, y + (switchHeight * 0.83), dipPinWidth);
+        handleX = handleMove(handleX);
+        handle(ctx, handleX, handleY, handleWidth, handleHeight);
+    }
+
+
+    // hWidth is the handle width.
+    function handle (ctx, topLeftX, topLeftY, hWidth, hHeight) {
+        // top
+        topHeight = ( hHeight / 8 ) * 3;
+        topWidth = hWidth / 4;
+        // middle
+        middleHeight = ( hHeight / 8 ) * 2;
+        middleWidth = hWidth;
+        // bottom
+        bottomHeight = ( hHeight / 8 ) * 3;
+        bottomWidth = hWidth / 3;
+
+        // drawing coordinates
+        var x = topLeftX;
+        var y = topLeftY;
+        
+        // top
+        ctx.fillStyle = handleColor;
+        ctx.strokeStyle = handleColor;
+        ctx.lineCap = 'round';
+        //ctx.lineWidth = thinLineWidth;
+        x += hWidth / 2 // move to middle
+        x -= (topWidth / 2); // move back
+        ctx.fillRect(x, y, topWidth, topHeight);
+        
+        
+        // middle
+        x = topLeftX;
+        y = topLeftY + topHeight + (middleHeight / 2);
+        //ctx.fillRect(x, y, middleWidth, middleHeight);
+        
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineWidth = middleHeight;
+        x += hWidth;
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        
+        // bottom - being drawn black and i dont know why
+        x = topLeftX;
+        x += (hWidth / 2) // move to middle
+        x -= (bottomWidth / 2); // move back
+        y = topLeftY + topHeight + middleHeight;
+        //
+        ctx.beginPath();
+        ctx.fillStyle = handleColor;
+        ctx.strokeStyle = handleColor;
+        ctx.lineWidth = thinLineWidth;
+        ctx.moveTo(x, y);
+        x += (bottomWidth / 2);
+        y += bottomHeight;
+        ctx.lineTo(x, y);
+        x += (bottomWidth / 2);
+        y -=  bottomHeight;
+        ctx.lineTo(x, y);
+        //ctx.stroke();
+        ctx.fill();
+    }
+
+
+    function box (ctx, x, y, width, height) {
+        var radius = 5;
+        roundedRect(ctx, x, y, width, height, radius);
+        roundedRect(ctx, x + boxGap, y + boxGap,
+            width - (boxGap * 2), height - (boxGap * 2), radius);
+    }
+
+
+    function handleGuide (x, y, width) {
+        ctx.beginPath();
+        ctx.strokeStyle = offColor;
+        ctx.lineWidth = thinLineWidth;
+        ctx.moveTo(x + boxGap,           y + (switchHeight / 3.2) );
+        ctx.lineTo(x + (width - boxGap), y + (switchHeight / 3.2) );
+        ctx.moveTo(x + boxGap,           y + (switchHeight / 3.2) + boxGap);
+        ctx.lineTo(x + (width - boxGap), y + (switchHeight / 3.2) + boxGap);
+        ctx.stroke();
+    }
+
+    function dipPins (ctx, x, y, width, height) {
+        // start
+        ctx.beginPath();
+        ctx.fillStyle = circuitOneColor;
+        ctx.strokeStyle = circuitOneColor;
+        ctx.lineWidth = thickLineWidth;
+        // left
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y + height);
+        // right
+        x += width;
+        y += 1;
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y + height);
+        // contact
+        var radius = switchHeight / 5;
+        ctx.moveTo(x, y);
+        //var startAngle = 1.2 * Math.PI;
+        var degrees = 360;
+        var radians = (Math.PI/180)*degrees;
+        var startAngle = radians;
+        //var endAngle = 1.8 * Math.PI;
+        degrees = 190;
+        radians = (Math.PI/180)*degrees;
+        var endAngle = radians;
+        var antiClockWise = true;
+        ctx.arc(x - radius, y, radius, startAngle, endAngle, antiClockWise);
+        
+        // end
+        ctx.stroke();
+    }
+
+
+    function switchWiper (ctx, x, y, width) {
+        // rotate
+        // simple description
+        // https://www.w3schools.com/tags/canvas_rotate.asp
+        // complex description
+        // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/rotate
+        // "degrees to rotate clockwise from horizontal" X pi/180
+        
+        ctx.translate(x, y);
+        // handleMove changes switchWipeAngle
+        ctx.rotate (switchWipeAngle * Math.PI / 180);
+        ctx.fillStyle = circuitOneColor;
+        ctx.strokeStyle = circuitOneColor;
+        ctx.fillRect (0, 0, switchWidth / 40, width);
+        // reset current transformation matrix to the identity matrix
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
+
+
+function relayWiperMove() {
+    // boundary check
+    if (relayWipeAngle >= rightRelayWipeAngle) {
+        circuitTwoOn = true;
+    } else {
+        circuitTwoOn = false;
+    }
+    if (relayWipeAngle > rightRelayWipeAngle) {
+        return;
+    }
+    if (relayWipeAngle < leftRelayWipeAngle) {
+        return;
+    }
+    // move
+    if (circuitOneOn && (relayWipeAngle > leftRelayWipeAngle)) {
+        relayWipeAngle -= 1;
+    }
+    if (! circuitOneOn && (relayWipeAngle < rightRelayWipeAngle)) {
+
+        relayWipeAngle += 1;
+    }
+}
+
+
+// handle, the interactive part of switch
+
+    function handleMove(x) {
+        // boundary check
+        var  leftX = switchX + handleBuffer + boxGap;
+        var rightX = switchX + switchWidth - handleWidth - handleBuffer - boxGap;
+        if (x > rightX && switchOn) {
+            circuitOneOn = true;
+            return x;
+        }
+        else if (x < leftX && (! switchOn )) {
+            switchWipeAngle = origSwitchWipeAngle; // return to upright position, just in case
+            return x;
+        }
+        // increment
+        var wiperContact = switchX + (handleWidth / 4);
+        var shift = 3;
+        if (switchOn) {
+            x += shift;
+            if (x > wiperContact) {
+                switchWipeAngle += 0.6;
+            }
+        } else {
+            circuitOneOn = false;
+            x -= shift;
+            if (x > wiperContact) {
+                switchWipeAngle -= 0.6;
+            }
+        }
+        return x;
+    }
+
+    function colorHandle(evt) {
+        var mousePos = getMousePos(canvas, evt);
+        if (overHandle(evt)) {
+            handleColor = '#AAAAAA';
+        } else {
+            handleColor = offColor;
+        }
+    }
+
+
+    function toggleHandle(e) {
+        if (! overHandle(e)) {
+            return;
+        }
+        if (switchOn) {
+            switchOn = false;
+        } else {
+            switchOn = true;
+        }
+    }
+
+    function overHandle(e) {
+        //var canvas = document.getElementById("myCanvas");
+        var mousePos = getMousePos(canvas, e);
+        
+        var leftX = handleX;
+        var rightX = handleX + handleWidth;
+        var topY = handleY;
+        var bottomY = handleY + handleHeight;
+        // https://www.w3schools.com/js/js_comparisons.asp
+        if (   mousePos.x >= leftX && mousePos.x <= rightX
+            && mousePos.y >= topY && mousePos.y <= bottomY ) {
+            return true;
+        }
+            return false;
+    }
+
+
+
+// lighbulb
+    function drawBulb (bulbOneX, bulbOneY, bulbWidth, bulbOneOn) {
+        var radius = bulbWidth / 2;
+        var x = bulbOneX + radius;
+        var y = bulbOneY + radius;
+        var capWidth = bulbWidth / 3;
+        var capHeight = capWidth;
+        
+        // gradient
+        if (bulbOneOn) {
+            var outerRadius = bulbWidth * 1.2;
+            var gradient = ctx.createRadialGradient(x, y, outerRadius, x, y, 1);
+            gradient.addColorStop(0, 'transparent');
+            gradient.addColorStop(1, 'yellow');
+            ctx.fillStyle = gradient;
+            var gradX = x - outerRadius;
+            var gradY = y - outerRadius;
+            ctx.fillRect(gradX, gradY, outerRadius * 2, outerRadius * 2);
+        }
+        // glass bulb
+        //ctx.moveTo(x + radius, y);
+        var antiClockWise = true;
+        //
+        var startDegrees = 45;
+        var startRadians = (Math.PI/180) * startDegrees;
+        var startAngle = startRadians;
+        var startX = x + radius * Math.cos(startRadians);
+        var startY = y + radius * Math.sin(startRadians);
+        //
+        var endDegrees = 135;
+        var endRadians = (Math.PI/180) * endDegrees;
+        var endAngle = endRadians;
+        var endX = x + radius * Math.cos(endRadians);
+        var endY = y + radius * Math.sin(endRadians);
+        //
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.fillStyle = switchColor;
+        ctx.strokeStyle = switchColor;
+        ctx.lineCap = 'butt';
+        ctx.lineWidth = thinLineWidth;
+        ctx.arc(x, y, radius, startAngle, endAngle, antiClockWise);
+        //
+        // For a circle whose center is (a,b) and has radius r,
+        // the position of a point on the circle's edge is
+        // (a+r*cos(angle), b+r*sin(angle))
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/sin
+        ctx.moveTo(startX, startY);
+        var lineToX = x + (capWidth / 2);
+        var lineToY = y + (radius * 1.2);
+        ctx.lineTo( lineToX , lineToY);
+        //
+        ctx.moveTo(endX,endY);
+        lineToX = x - (capWidth / 2);
+        ctx.lineTo( lineToX , lineToY);
+        ctx.stroke();
+        
+        // cap
+        capX = x - (capWidth / 2);
+        capY = y + (radius * 1.2);
+        ctx.beginPath();
+        ctx.moveTo(capX, capY);
+        ctx.fillStyle = offColor;
+        ctx.fillRect(capX, capY, capWidth, capHeight);
+        ctx.fillStyle = '#FFFFFF';
+        capBuffer = 3;
+        ctx.fillRect(capX + capBuffer, capY + capBuffer,
+         capWidth - (capBuffer * 2), capHeight - (capBuffer * 2));
+         capY += capHeight;
+         // bottom
+         ctx.fillStyle = offColor;
+         ctx.moveTo(capX, capY);
+         var midWidth = capWidth / 2;
+         capX += midWidth;
+         capY += (midWidth / 2);
+         ctx.lineTo(capX, capY);
+         capX += midWidth;
+         capY -= (midWidth / 2);
+         ctx.lineTo(capX, capY);
+         ctx.fill();
+         
+         // filament
+         filX = x - (capWidth / 4);
+         filY = y + (radius * 1.2);
+         ctx.beginPath();
+         ctx.lineWidth = thinLineWidth;
+         ctx.moveTo(filX, filY);
+         var wiggleRoom = (capWidth / 6);
+         ctx.lineTo(filX - wiggleRoom, filY - radius);
+         for (var i = 0; i < 6; i += 2) {
+             ctx.lineTo(filX + (wiggleRoom * i), filY - radius - wiggleRoom);
+             ctx.lineTo(filX + (wiggleRoom * (i + 1)), filY - radius + wiggleRoom);
+         }
+         
+         ctx.lineTo(filX + (capWidth / 2), filY);
+         ctx.stroke();
+         // end
+    }
+
+
+
+// wire
+    function drawCircuitOneWire (origX, origY) {
+        // x and y track the position as I draw
+        var x = origX;
+        var y = origY;
+        var width = (switchWidth * 2.3);
+        
+        ctx.beginPath();
+        ctx.lineWidth = thinLineWidth;
+        ctx.fillStyle = circuitOneColor;
+        ctx.strokeStyle = circuitOneColor;
+        ctx.moveTo(x, y);
+        
+        // line from left switch pole to relay
+        var radius = 30;
+        var height = 10;
+
+        y += radius;
+        ctx.arcTo(x, y, x + radius, y, radius);
+        x = origX + width;
+        ctx.lineTo(x, y);
+        x += radius;
+        ctx.arcTo(x, y, x, y - radius, radius);
+        
+        // line from right switch pole to relay
+        x = origX + dipPinWidth;
+        y -= radius;
+        ctx.moveTo(x, y);
+        radius = 10;
+        y += radius;
+        ctx.arcTo(x, y, x + radius, y, radius);
+        x = origX + width;
+        ctx.lineTo(x, y);
+        x += radius;
+        ctx.arcTo(x, y, x, y - radius, radius);
+        
+        ctx.stroke();
+    }
+
+
+
+function drawCircuitTwoWire (origX, origY) {
+    // x and y track the position as I draw
+    var x = origX;
+    var y = origY;
+    var width = (switchWidth * 2.3);
+    
+    ctx.beginPath();
+    ctx.lineWidth = thinLineWidth;
+    ctx.fillStyle = circuitTwoColor;
+    ctx.strokeStyle = circuitTwoColor;
+
+    // line from switch pole
+    var radius = 30;
+    
+    // bottom line
+    ctx.moveTo(x, y);
+    y += radius;
+    ctx.arcTo(x, y, x + radius, y, radius);
+    x = origX + width;
+    ctx.lineTo(x, y);
+    
+    // top line
+    var x = origX + relayPinSpacing;
+    var y = origY;
+    ctx.moveTo(x, y);
+    var radius = 10;
+    y += radius;
+    ctx.arcTo(x, y, x + radius, y, radius);
+    x = origX + width;
+    ctx.lineTo(x, y);
+    // join
+    ctx.arcTo(x + radius, y, x + radius, y + radius, radius);
+    ctx.arcTo(x + radius, y + (radius * 2), x, y + (radius * 2), radius);
+    ctx.stroke();
+}
+
+
+
+// battery
+    function drawBattery (origX, origY, width, height) {
+        // draw battery frame
+        ctx.strokeStyle = 'black';
+        //ctx.lineWidth = thickLineWidth;
+        
+        var x = origX;
+        var y = origY;
+        
+        ctx.beginPath();
+        // positive terminal button
+        ctx.fillStyle = offColor;
+        ctx.fillRect(x, y + (height / 3), width / 15 , height / 3);
+        // body
+        x += width / 15;
+        //ctx.strokeRect(x, y, width, height);
+        ctx.fillStyle = offColor;
+        ctx.fillRect(x, y, width , height);
+        var margin = width / 15;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(x + margin, y + margin,
+                     width - (margin * 2), height - (margin * 2));
+        // full charge
+        margin = width / 9;
+        ctx.fillStyle = onColor;
+        ctx.fillRect(x + margin, y + margin,
+                     width - (margin * 2), height - (margin * 2));
+
+        
+        //ctx.stroke();
+    }
+
+
+
+// relay
+    function drawRelay (origX, origY, width, height) {
+
+        var x = origX;
+        var y = origY;
+        box(ctx, x, y, width, height);
+        var pinX = x + relayPinSpacing ;
+        var pinY = y + height - (height / 6);
+        var pinHeight = height  / 4;
+
+        relayPins (ctx, pinX, pinY, pinHeight, relayPinSpacing);
+        relayWires (ctx, pinX, pinY, pinHeight, relayPinSpacing)
+        relayWiper (origX + 50, origY + 25) ;
+        // screw
+        x = origX + 15;
+        y = origY + 15;
+        drawScrew(x, y);
+        // wrap wire around screw
+        ctx.beginPath();
+        ctx.strokeStyle = circuitOneColor;
+        ctx.lineWidth = thinLineWidth;
+        x = origX + 40;
+        y = origY + 20;
+        for (var i =0; i < 7; i++) {
+            ctx.moveTo(x, y);
+            y += 10;
+            ctx.lineTo(x - 20, y );
+        }
+        ctx.stroke();
+        
+    }
+
+
+
+
+
+    function relayWiper (origX, origY) {
+        var radius = 5;
+        var width = 30;
+        var height = 60;
+        var barLength = height;
+        x = origX;
+        y = origY;
+
+
+        ctx.lineWidth = thickLineWidth;
+        
+        // first contact
+        ctx.beginPath();
+        ctx.strokeStyle = offColor;
+        x = origX + 20;
+        ctx.moveTo(x - thickLineWidth, y);
+        ctx.arc(x - radius - thickLineWidth, y, radius, 0, 2*Math.PI);
+                ctx.stroke();
+        ctx.stroke();
+        ctx.closePath();
+        
+        // hinge
+        ctx.beginPath();
+        var hingeX = x;
+        var hingeY = y += height;
+        ctx.beginPath();
+        ctx.strokeStyle = circuitTwoColor;
+        ctx.moveTo(hingeX + radius, y);
+        ctx.arc(hingeX, hingeY, radius, 0, 2*Math.PI);
+        ctx.stroke();
+        
+        // second contact
+        ctx.beginPath();
+        ctx.strokeStyle = circuitTwoColor;
+        x = origX + 50;
+        y = origY + 10;
+        ctx.moveTo(x + radius, y);
+        ctx.arc(x, y, radius, 0, 2*Math.PI);
+        ctx.stroke();
+        
+        // bar
+        y -= radius;
+        ctx.moveTo(hingeX, hingeY);
+        
+        ctx.translate(hingeX, hingeY - radius);
+        // handleMove changes relayWipeAngle
+        ctx.rotate (relayWipeAngle * Math.PI / 180);
+        ctx.fillStyle = circuitTwoColor;
+        ctx.strokeStyle = circuitTwoColor;
+        ctx.fillRect (0, 0, relayWidth / 40, relayHeight / 2);
+        // reset current transformation matrix to the identity matrix
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        
+    }
+
+
+    function relayPins (ctx, origX, origY, height, spacing) {
+        // start
+        var x = origX;
+        var y = origY;
+        ctx.beginPath();
+        ctx.strokeStyle = circuitOneColor;
+        
+        // left in
+        ctx.moveTo(x, y);
+        y += height;
+        ctx.lineWidth = thickLineWidth;
+        ctx.lineTo(x, y);
+        ctx.stroke();
+
+        // left out
+        x += spacing;
+        y = origY;
+        ctx.moveTo(x, y);
+        y += height;
+        ctx.lineWidth = thickLineWidth;
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.closePath();
+        
+
+        ctx.beginPath();
+        ctx.strokeStyle = circuitTwoColor;
+        
+        // right in
+        x += spacing;
+        y = origY;
+        ctx.moveTo(x, y);
+        y += height;
+        ctx.lineWidth = thickLineWidth;
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        
+        // right out
+        x += spacing;
+        y = origY;
+        ctx.moveTo(x, y);
+        y += height;
+        ctx.lineWidth = thickLineWidth;
+        ctx.lineTo(x, y);
+        ctx.stroke();
+
+        // end
+        ctx.closePath();
+    }
+
+
+    function relayWires (ctx, origX, origY, height, spacing) {
+        // start
+        var x = origX;
+        var y = origY;
+        var radius = 10;
+        ctx.beginPath();
+
+        // left in
+        y += height;
+        ctx.strokeStyle = circuitOneColor;
+        ctx.lineWidth = thinLineWidth;
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y - 140);
+        ctx.stroke();
+        
+        // left out
+        x += spacing;
+        y = origY;
+        ctx.moveTo(x, y);
+        y += height;
+        ctx.lineWidth = thinLineWidth;
+        y -= 55;
+        ctx.lineTo(x, y);
+        ctx.arcTo(x, y - radius, x - radius, y - radius, radius);
+        ctx.stroke();
+        ctx.closePath();
+        
+        
+        ctx.beginPath();
+        ctx.strokeStyle = circuitTwoColor;
+
+        // right in
+        x += spacing;
+        y = origY;
+        ctx.moveTo(x, y);
+        y += height;
+        ctx.lineWidth = thinLineWidth;
+        y -= 60;
+        ctx.lineTo(x, y);
+        radius = 5;
+        ctx.arcTo(x, y - radius, x + radius, y -radius, radius);
+        ctx.stroke();
+        
+        // right out
+        x += spacing;
+        y = origY;
+        ctx.moveTo(x, y);
+        y += height;
+        ctx.lineWidth = thinLineWidth;
+        y -= 50;
+        ctx.lineTo(x, y);
+        radius = 10;
+        ctx.arcTo(x, y - radius, x + radius, y - radius, radius);
+        x += radius;
+        y -= radius;
+        ctx.moveTo(x, y);
+        ctx.arcTo(x + radius, y, x + radius, y - radius, radius);
+        x += radius;
+        y -= 50;
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        
+        // end
+        ctx.closePath();
+    }
+
+
+    function drawScrew (origX, origY) {
+        var triangleWidth = 30;
+        var triangleHeight = 10;
+        var x = origX;
+        var y = origY;
+        
+        ctx.beginPath();
+        ctx.strokeStyle = offColor;
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = thickLineWidth;
+        // head
+        ctx.moveTo(x, y);
+        x += triangleWidth;
+        ctx.lineTo(x, y);
+        x  -= triangleWidth / 3;
+        y  += (triangleHeight / 2);
+        ctx.lineTo(x, y);
+        // down
+        y += 30;
+        ctx.lineTo(x, y);
+        x = origX + (triangleWidth / 2);
+        y += 50;
+        ctx.lineTo(x, y);
+        // back up
+        x = origX + (triangleWidth / 3);
+        y -= 50;
+        ctx.lineTo(x, y);
+        y -= 30;
+        ctx.lineTo(x, y);
+        ctx.closePath();
+        ctx.stroke();
+    }
+
+// geeral subs
+
+    function roundedRect(ctx, x, y, width, height, radius) {
+        ctx.beginPath();
+        ctx.lineWidth = thinLineWidth;
+        ctx.moveTo(x, y + radius);
+        ctx.lineTo(x, y + height - radius);
+        // https://www.w3schools.com/jsref/canvas_arcto.asp
+        ctx.arcTo(x, y + height, x + radius, y + height, radius);
+        ctx.lineTo(x + width - radius, y + height);
+        ctx.arcTo(x + width, y + height, x + width, y + height-radius, radius);
+        ctx.lineTo(x + width, y + radius);
+        ctx.arcTo(x + width, y, x + width - radius, y, radius);
+        ctx.lineTo(x + radius, y);
+        ctx.arcTo(x, y, x, y + radius, radius);
+        ctx.stroke();
+    }
+
+    function getMousePos(canvas, evt) {
+        var rect = canvas.getBoundingClientRect();
+        return {
+            x: evt.clientX - rect.left,
+            y: evt.clientY - rect.top
+        };
+    }
+
+
+</script>
+
+</body>
+</html>
